@@ -7,9 +7,14 @@ def test_sensor_data_starts_empty():
     assert data.readings == []
 
 
-def test_average_strategy():
+def test_average_strategy_ignores_outliers():
     strategy = AverageStrategy()
-    assert strategy.analyze([10, 20, 30]) == 20
+    assert strategy.analyze([10, 20, 30, 100]) == 20
+
+
+def test_average_strategy_ignores_negative_outliers():
+    strategy = AverageStrategy()
+    assert strategy.analyze([-10, 10, 20, 30]) == 20
 
 
 def test_average_empty_list():
@@ -17,9 +22,14 @@ def test_average_empty_list():
     assert strategy.analyze([]) == 0
 
 
-def test_max_strategy():
+def test_max_strategy_ignores_outliers():
     strategy = MaxStrategy()
-    assert strategy.analyze([5, 12, 7]) == 12
+    assert strategy.analyze([10, 20, 30, 100]) == 30
+
+
+def test_max_strategy_ignores_negative_outliers():
+    strategy = MaxStrategy()
+    assert strategy.analyze([-10, 10, 20, 30]) == 30
 
 
 def test_max_empty_list():
@@ -27,9 +37,9 @@ def test_max_empty_list():
     assert strategy.analyze([]) == 0
 
 
-def test_min_strategy():
+def test_min_strategy_ignores_negative_outliers():
     strategy = MinStrategy()
-    assert strategy.analyze([5, 12, 7]) == 5
+    assert strategy.analyze([-10, 10, 20, 30]) == 10
 
 
 def test_min_empty_list():
@@ -37,19 +47,24 @@ def test_min_empty_list():
     assert strategy.analyze([]) == 0
 
 
-def test_outlier_strategy_high_value():
+def test_outlier_strategy_high_values():
     strategy = OutlierStrategy()
-    assert strategy.analyze([10, 20, 30, 100]) == [10, 100]
+    assert strategy.analyze([10, 20, 30, 100]) == [100]
 
 
-def test_outlier_strategy_empty_list():
+def test_outlier_strategy_negative_values():
     strategy = OutlierStrategy()
-    assert strategy.analyze([]) == []
+    assert strategy.analyze([-10, 10, 20, 30]) == [-10]
+
+
+def test_outlier_strategy_multiple_outliers():
+    strategy = OutlierStrategy()
+    assert strategy.analyze([42, 45, 50, -5, 150, 20000]) == [-5, 150, 20000]
 
 
 def test_run_analysis_average():
     data = SensorData()
-    data.readings = [10, 20, 30]
+    data.readings = [10, 20, 30, 100]
 
     result = data.run_analysis(AverageStrategy())
 
@@ -57,7 +72,7 @@ def test_run_analysis_average():
 
 
 def test_load_data_valid_file(tmp_path):
-    test_file = tmp_path / "data.txt"
+    test_file = tmp_path / "test_data.txt"
     test_file.write_text("10\n20\n30\n")
 
     data = SensorData()
